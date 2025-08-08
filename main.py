@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 import random
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -95,4 +94,5 @@ async def close(ctx):
     else:
         await ctx.send("⚠️ This command can only be used inside a ticket channel.")
 
+bot.run(os.getenv("DISCORD_BOT_TOKEN"))
 
