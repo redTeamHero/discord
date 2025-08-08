@@ -7,10 +7,10 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 CHANNEL_BUCKET_MAP = {
-    "under-2500": "0-2500",
-    "2501-5000": "2501-5000",
-    "5001-10000": "5001-10000",
-    "10001-plus": "10001+"
+    "under-150": "0-2500",
+    "151-300": "2501-5000",
+    "301-500": "5001-10000",
+    "500-plus": "10001+"
 }
 
 @bot.event
