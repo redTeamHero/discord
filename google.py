@@ -45,4 +45,4 @@ async def on_ready():
     print(f'🤖 Logged in as {client.user}')
 
 client.loop.create_task(check_alerts())
-client.run(DISCORD_TOKEN)
+client.run(DISCORD_BOT_TOKEN)
