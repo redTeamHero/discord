@@ -10,7 +10,7 @@ import os
 RSS_FEED_URL = 'https://www.google.com/alerts/feeds/15905049311287711625/8527519402525634190'  # Replace with your actual feed
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')  # Set this in your environment or .env file
 CHANNEL_ID = int(os.getenv('CHANNEL_ID', '1403391784356155615'))  # Replace with your channel ID or use .env
-CHECK_INTERVAL = 300  # In seconds
+CHECK_INTERVAL = 10  # In seconds
 # ------------------------
 
 intents = discord.Intents.default()
