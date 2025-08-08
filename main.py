@@ -1,53 +1,49 @@
+
+import os
 import discord
 from discord.ext import commands
-import os
-from tradelines import scrape_and_group_by_limit
+from discord.ui import Button, View
+from scrape import scrape_and_group_by_limit
 
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='!', intents=intents)
-
-CHANNEL_BUCKET_MAP = {
-    "under-150": "0-2500",
-    "151-300": "2501-5000",
-    "301-500": "5001-10000",
-    "500-plus": "10001+"
-}
+intents = discord.Intents.default()
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"✅ Bot connected as {bot.user}")
+    print(f"✅ Logged in as {bot.user}")
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
+@bot.command(name='tradelines')
+async def tradelines(ctx):
+    view = View()
+    for label in ["0-2500", "2501-5000", "5001-10000", "10001+"]:
+        view.add_item(TradelineButton(label))
+    await ctx.send("Select a tradeline category:", view=view)
 
-    bucket_key = CHANNEL_BUCKET_MAP.get(message.channel.name)
-    if not bucket_key:
-        return
+class TradelineButton(Button):
+    def __init__(self, label):
+        super().__init__(label=label, style=discord.ButtonStyle.primary)
 
-    await message.channel.send("🔄 Fetching tradelines...")
-
-    try:
+    async def callback(self, interaction: discord.Interaction):
         buckets, _, _ = scrape_and_group_by_limit()
-        tradelines = buckets.get(bucket_key, [])[:5]
+        tradelines = buckets.get(self.label, [])
 
         if not tradelines:
-            await message.channel.send("⚠️ No tradelines available right now.")
+            await interaction.response.send_message(f"No tradelines found for {self.label}.", ephemeral=True)
             return
 
-        for t in tradelines:
+        embeds = []
+        for t in tradelines[:5]:  # Limit to first 5 for brevity
             embed = discord.Embed(
-                title=t['bank'],
+                title=f"{t['bank']} - ${t['limit']:,} Limit",
                 description=t['text'],
                 color=discord.Color.blue()
             )
-            embed.add_field(name="💰 Buy Now", value=f"[Click to buy](https://yourdomain.com{t['buy_link']})", inline=False)
-            await message.channel.send(embed=embed)
+            embed.add_field(name="Price", value=f"${t['price']}", inline=True)
+            embed.set_footer(text="Everyday Winners Tradeline Bot")
+            embeds.append(embed)
 
-    except Exception as e:
-        await message.channel.send(f"❌ Error retrieving tradelines: {e}")
+        for embed in embeds:
+            await interaction.channel.send(embed=embed)
 
-    await bot.process_commands(message)
-
-bot.run(os.getenv("DISCORD_BOT_TOKEN"))
+if __name__ == "__main__":
+    bot.run(os.getenv("DISCORD_BOT_TOKEN"))
