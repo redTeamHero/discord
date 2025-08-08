@@ -52,7 +52,7 @@ async def on_interaction(interaction: Interaction):
         for t in tradelines:
             embed.add_field(
                 name=f"{t['bank']} - ${t['price']:.2f}",
-                value=f"💳 Limit: ${t['limit']:,}\n📅 Opened: {t['opened']}\n[Buy Now]({t['buy_link']})",
+                value=f"💳 Limit: ${t['limit']:,}\n📅 Opened: {t['opened']}\n[Buy Now]({t.get('buy_link', '#')})",
                 inline=False
             )
 
