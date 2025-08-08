@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord import app_commands, Interaction
 from scrape import scrape_and_group_by_limit
 import stripe
+import subprocess
 
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY", "").strip()
 BASE_DOMAIN = os.environ.get("BASE_DOMAIN", "https://yourapp.onrender.com")
@@ -91,4 +92,5 @@ async def on_interaction(interaction: Interaction):
 
         await interaction.followup.send(embed=embed, ephemeral=True)
 
+subprocess.Popen(["python3", "google_alerts_bot.py"])
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
