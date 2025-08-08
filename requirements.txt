@@ -1,3 +1,5 @@
 discord.py
-requests
+stripe
+flask
 beautifulsoup4
+requests
