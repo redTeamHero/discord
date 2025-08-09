@@ -1,20 +1,16 @@
-# main.py
 import os
-import subprocess
 import discord
 from discord.ext import commands
 from discord import app_commands, Interaction
 import stripe
-from scrape import scrape_and_group_by_limit  # <-- works because scrape.py exists
+from scrape import scrape_and_group_by_limit
 from dotenv import load_dotenv
 
 load_dotenv()
 
 stripe.api_key = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
 BASE_DOMAIN = os.getenv("BASE_DOMAIN", "https://yourapp.onrender.com")
-
-DISCORD_MAIN_TOKEN = os.getenv("DISCORD_BOT_TOKEN")  # main bot token
-GOOGLE_WORKER = os.getenv("RUN_GOOGLE_WORKER", "1")  # toggle background worker
+DISCORD_MAIN_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -97,11 +93,14 @@ async def on_interaction(interaction: Interaction):
 
         await interaction.followup.send(embed=embed, ephemeral=True)
 
+# Load the alerts Cog at startup (discord.py v2 style)
+@bot.event
+async def setup_hook():
+    # Import here to avoid any accidental top-level import side effects
+    from google_worker import setup as setup_alerts
+    await setup_alerts(bot)
+
 if __name__ == "__main__":
-    # Optional: launch google alerts worker as a separate process
-    if GOOGLE_WORKER == "1":
-        # Ensure google.py can find its env vars (DISCORD_TOKEN/CHANNEL_ID/RSS_FEED_URL)
-        subprocess.Popen(["python3", "google.py"])
     if not DISCORD_MAIN_TOKEN:
-        raise SystemExit("Set DISCORD_BOT_TOKEN for main bot.")
+        raise SystemExit("Set DISCORD_BOT_TOKEN in env.")
     bot.run(DISCORD_MAIN_TOKEN)
