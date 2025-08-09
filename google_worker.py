@@ -1,48 +1,49 @@
-# google_alerts_bot.py
-
-import feedparser
-import discord
-import asyncio
-import time
+# google_worker.py
 import os
+import feedparser
+from discord.ext import commands, tasks
+import discord
 
-# -------- CONFIG --------
-RSS_FEED_URL = 'https://www.google.com/alerts/feeds/15905049311287711625/8527519402525634190'  # Replace with your actual feed
-DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')  # Set this in your environment or .env file
-CHANNEL_ID = int(os.getenv('CHANNEL_ID', '1403391784356155615'))  # Replace with your channel ID or use .env
-CHECK_INTERVAL = 10  # In seconds
-# ------------------------
+class AlertsCog(commands.Cog):
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        self.channel_id = int(os.getenv("CHANNEL_ID", "0"))
+        self.feed_url = os.getenv("RSS_FEED_URL", "https://hnrss.org/newest?points=100")
+        self.check_seconds = int(os.getenv("CHECK_INTERVAL", "120"))
+        self.sent_links = set()
+        # start task after bot is ready
+        self.poll_feed.start()
 
-intents = discord.Intents.default()
-client = discord.Client(intents=intents)
-sent_links = set()
+    def cog_unload(self):
+        self.poll_feed.cancel()
 
-async def check_alerts():
-    await client.wait_until_ready()
-    channel = client.get_channel(CHANNEL_ID)
-    if not channel:
-        print("❌ Channel not found! Check CHANNEL_ID.")
-        return
+    @tasks.loop(seconds=60)  # initial interval; we’ll switch after first run
+    async def poll_feed(self):
+        await self.bot.wait_until_ready()
+        channel = self.bot.get_channel(self.channel_id)
+        if not channel:
+            print("❌ AlertsCog: Channel not found. Check CHANNEL_ID & bot perms.")
+            return
 
-    print(f"✅ Monitoring Google Alerts for: {RSS_FEED_URL}")
+        feed = feedparser.parse(self.feed_url)
+        print(f"📰 AlertsCog: fetched {len(feed.entries)} entries")
+        for e in feed.entries:
+            link = getattr(e, "link", None)
+            title = getattr(e, "title", "Untitled")
+            summary = getattr(e, "summary", "")
+            if link and link not in self.sent_links:
+                self.sent_links.add(link)
+                try:
+                    await channel.send(f"**{title}**\n{summary}\n{link}")
+                except Exception as ex:
+                    print("AlertsCog send error:", ex)
 
-    while not client.is_closed():
-        feed = feedparser.parse(RSS_FEED_URL)
-        for entry in feed.entries:
-            if entry.link not in sent_links:
-                sent_links.add(entry.link)
-                title = entry.title
-                link = entry.link
-                summary = entry.get('summary', '')
+        # after first run, switch to configured interval
+        self.poll_feed.change_interval(seconds=self.check_seconds)
 
-                message = f"**{title}**\n{summary}\n{link}"
-                await channel.send(message)
+    @poll_feed.before_loop
+    async def before_poll(self):
+        await self.bot.wait_until_ready()
 
-        await asyncio.sleep(CHECK_INTERVAL)
-
-@client.event
-async def on_ready():
-    print(f'🤖 Logged in as {client.user}')
-
-client.loop.create_task(check_alerts())
-client.run(DISCORD_BOT_TOKEN)
+async def setup(bot: commands.Bot):
+    await bot.add_cog(AlertsCog(bot))
