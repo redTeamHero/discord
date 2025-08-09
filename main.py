@@ -96,7 +96,6 @@ async def on_interaction(interaction: Interaction):
 # Load the alerts Cog at startup (discord.py v2 style)
 @bot.event
 async def setup_hook():
-    # Import here to avoid any accidental top-level import side effects
     from google_worker import setup as setup_alerts
     await setup_alerts(bot)
 
