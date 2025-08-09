@@ -92,5 +92,5 @@ async def on_interaction(interaction: Interaction):
 
         await interaction.followup.send(embed=embed, ephemeral=True)
 
-subprocess.Popen(["python3", "google_alerts_bot.py"])
+subprocess.Popen(["python3", "google.py"])
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
