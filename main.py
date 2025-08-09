@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ---- ENV ----
-stripe.api_key = (os.getenv("STRIPE_SECRET_KEY") or "").strip()
+stripe.api_key = (os.getenv("STRIPE_SECRET_KEY").strip()
 BASE_DOMAIN = os.getenv("BASE_DOMAIN", "https://yourapp.onrender.com")
 DISCORD_MAIN_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
