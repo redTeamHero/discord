@@ -3,3 +3,6 @@ stripe
 flask
 beautifulsoup4
 requests
+feedparser
+python-dotenv
+
