@@ -1,3 +1,4 @@
+# main.py
 import os
 import math
 import discord
@@ -53,7 +54,7 @@ async def _before_refresh():
 class BankPicker(discord.ui.View):
     """Dropdown of banks (max 25 due to Discord limit). After picking, opens pager."""
     def __init__(self):
-        super().__init__(timeout=180)
+        super().__init__(timeout=None)  # keep dropdown alive
         banks = (CACHE_BANKS or [])[:25] or ["(none)"]
         self.select = discord.ui.Select(
             placeholder="Select a Bank",
@@ -137,17 +138,17 @@ class BankResultPager(discord.ui.View):
         return embed
 
     @discord.ui.button(label="◀ Prev", style=discord.ButtonStyle.secondary)
-    async def prev_btn(self, _, interaction: Interaction):
+    async def prev_btn(self, interaction: Interaction, button: discord.ui.Button):
         self.page = (self.page - 1) % self._pages()
         await interaction.response.edit_message(embed=self._build_embed(), view=self)
 
     @discord.ui.button(label="Next ▶", style=discord.ButtonStyle.secondary)
-    async def next_btn(self, _, interaction: Interaction):
+    async def next_btn(self, interaction: Interaction, button: discord.ui.Button):
         self.page = (self.page + 1) % self._pages()
         await interaction.response.edit_message(embed=self._build_embed(), view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.secondary)
-    async def back_btn(self, _, interaction: Interaction):
+    async def back_btn(self, interaction: Interaction, button: discord.ui.Button):
         picker = BankPicker()
         await interaction.response.edit_message(
             content="Pick a **Bank** to explore tradelines:",
@@ -165,7 +166,18 @@ async def on_ready():
     except Exception as e:
         print("Sync error:", e)
 
-    # Post the starting message once in your channel
+    # 🔧 Ensure cache is populated at least once (in case before_loop hasn't run yet)
+    global CACHE_ITEMS, CACHE_BANKS
+    if not CACHE_BANKS or not CACHE_ITEMS:
+        try:
+            buckets, banks, _years = scrape_and_group_by_limit()
+            CACHE_ITEMS = _flatten(buckets)
+            CACHE_BANKS = banks[:]
+            print(f"[tradelines] on_ready filled cache: {len(CACHE_ITEMS)} items / {len(CACHE_BANKS)} banks")
+        except Exception as e:
+            print("[tradelines] on_ready cache fill error:", e)
+
+    # Post the dropdown
     for guild in bot.guilds:
         for channel in guild.text_channels:
             if channel.name == "purchase-tradelines":
@@ -182,8 +194,7 @@ async def on_ready():
 async def setup_hook():
     # start the 30-min cache refresher
     refresh_tradelines_cache.start()
-    # load your Google Alerts worker extension
-    # (make sure file is named google_worker.py with async setup(bot))
+    # load your Google Alerts worker extension (must be google_worker.py with async setup(bot))
     await bot.load_extension("google_worker")
 
 # ---- RUN ----
